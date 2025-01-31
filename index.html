@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حاسبة الديون الشخصية</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #1557b0;
+        }
+
+        .debts-list {
+            margin-top: 30px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        .debt-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .totals {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            padding: 8px 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>حاسبة الديون الشخصية</h1>
+        
+        <div class="input-group">
+            <input type="text" id="debtor" placeholder="اسم المدين">
+            <input type="text" id="creditor" placeholder="اسم الدائن">
+            <input type="number" id="amount" placeholder="المبلغ">
+            <input type="text" id="description" placeholder="وصف الدين">
+            <button onclick="addDebt()">إضافة دين</button>
+        </div>
+
+        <div class="totals">
+            <input type="text" id="searchPerson" placeholder="ابحث عن شخص" onkeyup="filterDebts()">
+            <h3>الإجماليات:</h3>
+            <p>يدين به: <span id="totalOwed">0</span></p>
+            <p>ما يستحقه: <span id="totalDue">0</span></p>
+            <p>صافي الرصيد: <span id="netBalance">0</span></p>
+        </div>
+
+        <div class="debts-list">
+            <h3>قائمة الديون:</h3>
+            <div id="debtsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let debts = JSON.parse(localStorage.getItem('debts')) || [];
+
+        function saveData() {
+            localStorage.setItem('debts', JSON.stringify(debts));
+        }
+
+        function addDebt() {
+            const debtor = document.getElementById('debtor').value;
+            const creditor = document.getElementById('creditor').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const description = document.getElementById('description').value;
+
+            if (!debtor || !creditor || !amount) {
+                alert('الرجاء ملء جميع الحقول المطلوبة');
+                return;
+            }
+
+            debts.push({
+                debtor,
+                creditor,
+                amount,
+                description,
+                date: new Date().toLocaleDateString()
+            });
+
+            saveData();
+            updateDisplay();
+            clearInputs();
+        }
+
+        function deleteDebt(index) {
+            debts.splice(index, 1);
+            saveData();
+            updateDisplay();
+        }
+
+        function clearInputs() {
+            document.getElementById('debtor').value = '';
+            document.getElementById('creditor').value = '';
+            document.getElementById('amount').value = '';
+            document.getElementById('description').value = '';
+        }
+
+        function calculateTotals(person) {
+            let totalOwed = 0;
+            let totalDue = 0;
+
+            debts.forEach(debt => {
+                if (debt.debtor === person) totalOwed += debt.amount;
+                if (debt.creditor === person) totalDue += debt.amount;
+            });
+
+            document.getElementById('totalOwed').textContent = totalOwed;
+            document.getElementById('totalDue').textContent = totalDue;
+            document.getElementById('netBalance').textContent = totalDue - totalOwed;
+        }
+
+        function filterDebts() {
+            const person = document.getElementById('searchPerson').value;
+            calculateTotals(person);
+        }
+
+        function updateDisplay() {
+            const container = document.getElementById('debtsContainer');
+            container.innerHTML = '';
+
+            debts.forEach((debt, index) => {
+                const debtElement = document.createElement('div');
+                debtElement.className = 'debt-item';
+                debtElement.innerHTML = `
+                    <div>
+                        <strong>${debt.debtor}</strong> يدين لـ 
+                        <strong>${debt.creditor}</strong> بمبلغ 
+                        ${debt.amount} ريال
+                        <br><small>${debt.description} - ${debt.date}</small>
+                    </div>
+                    <button class="delete-btn" onclick="deleteDebt(${index})">حذف</button>
+                `;
+                container.appendChild(debtElement);
+            });
+        }
+
+        // التحميل الأولي
+        updateDisplay();
+    </script>
+</body>
+</html>
